@@ -15,3 +15,13 @@
 - "参数扫描：圆孔直径从 20μm 到 60μm，步长 10μm，对比透射率"
 
 Skill 会自动完成：理解需求 → 生成脚本 → 运行调试 → 验证结果 → 保存交付。
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=balabala789654%2FLumericalFDTD-skill&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=balabala789654/LumericalFDTD-skill&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=balabala789654/LumericalFDTD-skill&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=balabala789654/LumericalFDTD-skill&type=date&legend=top-left" />
+ </picture>
+</a>
