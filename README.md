@@ -1,28 +1,17 @@
 # LumericalFDTD Skill
 
-基于 Ansys Lumerical 2025 R2 Python API 的 FDTD 自动化仿真 skill，支持光子器件设计、衍射分析、超表面、波导、光栅、TGV 结构等场景。
+为 Ansys Lumerical FDTD 自动构建和调试 Python 仿真脚本。只需描述你的光学器件需求（结构、材料、光源、监视器），skill 会自动生成脚本、运行仿真、迭代 debug，最终交付 FSP 文件和结果图表。
 
-## 目录结构
+## 适用场景
 
-```
-LumericalFDTD/
-├── SKILL.md                     # skill 入口：核心工作流、环境配置、快速索引
-├── references/
-│   ├── building-blocks.md       # 仿真构建：几何、光源、监视器、网格的详细用法
-│   ├── api-reference.md         # 高级 API：会话管理、SimObject、数据传递、lumopt
-│   ├── common-errors.md         # 调试速查：常见错误现象与解决方案
-│   └── diffraction.md           # 衍射专项：衬底选材、Airy 环捕捉策略
-├── scripts/
-│   └── template.py              # 即用脚本模板，修改参数区即可运行
-├── assets/                      # 预留资源目录
-├── LICENSE.txt
-└── README.md
-```
+光子器件设计、衍射分析、超表面、波导、光栅、TGV 通孔、光场传播等需要 FDTD 仿真的任务。
 
-## 设计原则
+## 使用方式
 
-采用 skill-creator 规范的**三级渐进加载**：
+在对话中直接描述你的仿真需求，例如：
 
-1. **SKILL.md** — 始终在上下文中，定义核心工作流和关键约束
-2. **references/** — 根据当前任务按需读取对应参考文档
-3. **scripts/** — 提供即用的模板和工具脚本
+- "设计一个直径 30μm 的圆孔在 50μm 厚 SiO2 衬底上，用 100μm 波长平面波照射，观察透射衍射图案"
+- "模拟金光栅的反射谱，周期 10μm，占空比 0.5，波长 1-2μm"
+- "参数扫描：圆孔直径从 20μm 到 60μm，步长 10μm，对比透射率"
+
+Skill 会自动完成：理解需求 → 生成脚本 → 运行调试 → 验证结果 → 保存交付。

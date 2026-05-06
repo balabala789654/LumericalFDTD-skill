@@ -1,8 +1,11 @@
 # FDTD 仿真脚本模板
 # 用法：修改参数定义区的变量，运行脚本
+# 注意：API_PATH 需要替换为实际 Lumerical 安装路径（由环境探测步骤确定）
 
 import sys
-sys.path.append("C:\\Apps\\ANSYS Inc\\v252\\api\\python\\")
+# API_PATH 示例（Windows）： C:\\Program Files\\ANSYS Inc\\v252\\api\\python\\
+# API_PATH 示例（Linux）：   /opt/ansys_inc/v252/api/python/
+sys.path.append("__API_PATH__")
 import lumapi
 import numpy as np
 import matplotlib
@@ -28,8 +31,10 @@ hole_diameter = 30e-6
 # 监视器位置
 z_monitor = 20e-6
 
-# 输出路径
-output_dir = "C:\\Users\\Lex"
+# 输出路径（根据 OS 使用对应格式）
+# Windows: "C:\\path\\to\\output"
+# Linux:   "/path/to/output"
+output_dir = "__OUTPUT_DIR__"
 
 # ==========================================
 # 仿真构建
