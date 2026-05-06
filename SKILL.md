@@ -146,8 +146,33 @@ with lumapi.FDTD(hide=True) as fdtd:
 | `references/common-errors.md` | 运行报错需要排查时 |
 | `references/diffraction.md` | 涉及孔衍射、Airy 环、远场/近场分析时 |
 
-## 脚本交付规范
+## 文件管理规则（必须遵守）
 
-- 输出文件保存到 `C:\Users\Lex` 下
-- `.fsp` 文件和 `.py` 脚本使用一致且有意义的文件名
-- 后处理图表保存为 `.png` 文件
+每个仿真项目目录内严格按以下规则分类，不得将输出文件散落在根目录：
+
+| 目录 | 存放内容 |
+|------|---------|
+| `fsp/` | `.fsp` 仿真项目文件 + `*_p0.log` 仿真日志 |
+| `data/` | `.npz` 仿真结果数据 + `.json` 元数据 |
+| `pic/` | `.png/.jpg` 图片和图表 |
+| 根目录 | `.py` Python脚本 + `.md` 文档 |
+
+### 规则细节
+1. 创建新项目时，必须先在项目目录内建立 `fsp/`、`data/`、`pic/` 三个子目录
+2. Python 脚本中 `fdtd.save()` 保存 `.fsp` 到 `fsp/` 目录，图表 `plt.savefig()` 保存到 `pic/` 目录，数据 `np.savez()` 保存到 `data/` 目录
+3. 子实验目录（如 `TGV_Waist_vs_Lambda/`）内部也遵循同样的 `fsp/data/pic` 分类
+4. 禁止将 `.fsp`、`.npz`、`.png` 文件散落在项目根目录
+
+### 脚本示例路径
+
+```python
+project_dir = r"C:\Users\Lex\Documents\FDTD\MyProject"
+# 确保目录存在
+for sub in ["fsp", "data", "pic"]:
+    os.makedirs(os.path.join(project_dir, sub), exist_ok=True)
+
+# 文件保存
+fdtd.save(os.path.join(project_dir, "fsp", "simulation.fsp"))
+np.savez(os.path.join(project_dir, "data", "results.npz"), E=Ex, ...)
+plt.savefig(os.path.join(project_dir, "pic", "field.png"), dpi=150)
+```

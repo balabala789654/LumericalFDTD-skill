@@ -16,12 +16,32 @@
 
 Skill 会自动完成：理解需求 → 生成脚本 → 运行调试 → 验证结果 → 保存交付。
 
+## 文件管理规则
+
+每个仿真项目目录内严格按以下规则分类，不得将输出文件散落在根目录：
+
+| 目录 | 存放内容 |
+|------|---------|
+| `fsp/` | `.fsp` 仿真项目文件 + `*_p0.log` 仿真日志 |
+| `data/` | `.npz` 仿真结果数据 + `.json` 元数据 |
+| `pic/` | `.png/.jpg` 图片和图表 |
+| 根目录 | `.py` Python脚本 + `.md` 文档 |
+
+- 创建新项目时，必须先建立 `fsp/`、`data/`、`pic/` 三个子目录
+- Python 脚本中输出文件按类型写入对应子目录（`fsp/`、`data/`、`pic/`）
+- 子实验目录内部也遵循同样的 `fsp/data/pic` 分类
+- 禁止将 `.fsp`、`.npz`、`.png` 文件散落在项目根目录
+
 ## Star History
 
 <a href="https://www.star-history.com/?repos=balabala789654%2FLumericalFDTD-skill&type=date&legend=top-left">
+
  <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=balabala789654/LumericalFDTD-skill&type=date&theme=dark&legend=top-left" />
    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=balabala789654/LumericalFDTD-skill&type=date&legend=top-left" />
    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=balabala789654/LumericalFDTD-skill&type=date&legend=top-left" />
  </picture>
 </a>
+
+
+
