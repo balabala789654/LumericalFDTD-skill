@@ -1,0 +1,2 @@
+# LumericalFDTD-skill
+实现LumericalFDTD自动化仿真的skill
