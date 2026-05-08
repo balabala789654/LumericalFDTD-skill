@@ -121,6 +121,41 @@ with lumapi.FDTD(hide=True) as fdtd:
 
 > 现成模板见 `scripts/template.py`
 
+## 仿真与后处理分离（必须遵守）
+
+仿真（耗时长）和数据分析/绘图（秒级完成）**必须写在两个独立 `.py` 文件中**，禁止合并：
+
+| 文件 | 职责 | 执行时间 |
+|------|------|---------|
+| `*_sim.py` | 构建结构、运行 FDTD、保存 `.npz`/`.fsp` | 分钟~小时 |
+| `*_analysis.py` | 读取 `.npz`、计算指标、绘图保存 `.png` | 秒级 |
+
+### 命名规范
+```
+project_name_sim.py       # 仿真（含 skip-if-exists 逻辑）
+project_name_analysis.py  # 分析（纯数据读取，不调 lumapi.FDTD）
+```
+
+### 原因
+- 修改配色/图例/坐标轴时不应重跑整个仿真
+- `.npz` 数据是仿真和分析之间的唯一接口
+- 分析脚本可在仿真运行后反复执行、迭代调参
+
+### 示例
+
+```python
+# myproject_sim.py —— 只做仿真
+with lumapi.FDTD(hide=True) as fdtd:
+    ...
+    fdtd.run()
+    np.savez(os.path.join(data_dir, "results.npz"), I=I, x=x, y=y)
+
+# myproject_analysis.py —— 只做分析
+data = np.load(os.path.join(data_dir, "results.npz"))
+plt.plot(data["x"], data["I"])
+plt.savefig(os.path.join(pic_dir, "plot.png"))
+```
+
 ## 关键约束（必须遵守）
 
 | 约束 | 说明 |
