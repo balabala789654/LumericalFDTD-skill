@@ -1,40 +1,90 @@
-# LumericalFDTD Skill
+# LumericalFDTD
 
-为 Ansys Lumerical FDTD 自动构建和调试 Python 仿真脚本。只需描述你的光学器件需求（结构、材料、光源、监视器），skill 会自动生成脚本、运行仿真、迭代 debug，最终交付 FSP 文件和结果图表。
+An OpenCode skill that automates Ansys Lumerical FDTD simulation workflows. Describe your photonic device in natural language, and the skill generates Python scripts, runs simulations, debugs errors autonomously, and delivers FSP files and result charts.
 
-## 适用场景
+## Features
 
-光子器件设计、衍射分析、超表面、波导、光栅、TGV 通孔、光场传播等需要 FDTD 仿真的任务。
+- **Natural Language to Simulation** — Describe structures, materials, sources, and monitors; receive working `.fsp` files
+- **Autonomous Debug Loop** — Scripts are executed with Lumerical's built-in Python interpreter, errors are caught and fixed automatically
+- **Separation of Simulation & Analysis** — Long-running simulations and fast data analysis are kept in independent scripts so you can tweak plots without re-running
+- **Built-in Best Practices** — Dedicated references for building blocks, API usage, common errors, and diffraction analysis
+- **Cross-Platform** — Supports Windows and Linux, auto-detects Lumerical installation paths and Python interpreter
 
-## 使用方式
+## Supported Use Cases
 
-在对话中直接描述你的仿真需求，例如：
+Photonics device design, diffraction analysis, metasurfaces, waveguides, gratings, TGV (Through Glass Via) structures, optical field propagation — any task requiring FDTD simulation with Ansys Lumerical.
 
-- "设计一个直径 30μm 的圆孔在 50μm 厚 SiO2 衬底上，用 100μm 波长平面波照射，观察透射衍射图案"
-- "模拟金光栅的反射谱，周期 10μm，占空比 0.5，波长 1-2μm"
-- "参数扫描：圆孔直径从 20μm 到 60μm，步长 10μm，对比透射率"
+## Requirements
 
-Skill 会自动完成：理解需求 → 生成脚本 → 运行调试 → 验证结果 → 保存交付。
+- [Ansys Lumerical FDTD](https://www.ansys.com/products/optics/fdtd) (tested with 2025 R2 / v252; older versions may work)
+- The Lumerical installation must include the Python API (`lumapi`)
 
-## 文件管理规则
+## File Management
 
-| 目录 | 存放内容 |
-|------|---------|
-| `fsp/` | `.fsp` 仿真项目文件 + `*_p0.log` 仿真日志 |
-| `data/` | `.npz` 仿真结果数据 + `.json` 元数据 |
-| `pic/` | `.png/.jpg` 图片和图表 |
-| 根目录 | `.py` Python脚本 + `.md` 文档 |
+Each simulation project follows a consistent directory structure:
 
-## Star History
+| Directory | Contents |
+|-----------|----------|
+| `fsp/` | `.fsp` project files and simulation logs |
+| `data/` | `.npz` result data and `.json` metadata |
+| `pic/` | `.png` / `.jpg` charts and figures |
+| root | `.py` scripts and `.md` documentation |
 
-<a href="https://www.star-history.com/?repos=balabala789654%2FLumericalFDTD-skill&type=date&legend=top-left">
+## Usage
 
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=balabala789654/LumericalFDTD-skill&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=balabala789654/LumericalFDTD-skill&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=balabala789654/LumericalFDTD-skill&type=date&legend=top-left" />
- </picture>
-</a>
+In an OpenCode / Cowork session with this skill installed, describe your simulation need directly:
 
+- "Design a 30 μm diameter circular aperture in a 50 μm thick SiO2 substrate, illuminated by a 100 μm plane wave, and observe the transmitted diffraction pattern"
+- "Simulate the reflection spectrum of a gold grating — period 10 μm, duty cycle 0.5, wavelength 1–2 μm"
+- "Parameter sweep: circular aperture diameter from 20 μm to 60 μm, step 10 μm, compare transmittance"
 
+The skill follows a five-step pipeline: understand requirements → generate script → run & debug → verify results → save deliverables.
 
+> [!NOTE]
+> On first use, the skill automatically probes your system for the Lumerical installation path. If it cannot be found, you will be asked to provide it.
+
+## Script Template
+
+A reusable template is included at `scripts/template.py`. Each generated script follows this structure:
+
+```python
+# 1. Imports (API path, lumapi, numpy, matplotlib)
+# 2. Parameter definitions (wavelength, geometry, monitors)
+# 3. Simulation session (with lumapi.FDTD block):
+#    - Simulation region
+#    - Materials / substrate
+#    - Geometry (bottom to top)
+#    - Source
+#    - Monitors
+#    - Save → Run → Extract results
+# 4. Post-processing (outside the session block)
+
+with lumapi.FDTD(hide=True) as fdtd:
+    fdtd.addfdtd()
+    # ... build structure ...
+    fdtd.save("fsp/simulation.fsp")
+    fdtd.run()
+```
+
+Simulation and analysis are kept in separate scripts — `project_sim.py` for the heavy FDTD run and `project_analysis.py` for data processing and plotting. This lets you adjust colors, labels, and figure layout without re-running the simulation.
+
+## Known Constraints
+
+The Lumerical Python API has several quirks documented in `references/common-errors.md`. Key ones include:
+
+| Constraint | Detail |
+|------------|--------|
+| Material names must be full strings | `"PEC (Perfect Electrical Conductor)"`, not `"PEC"` |
+| Polygon method is `addpoly` | Not `addpolygon` |
+| `addcone` does not exist | Stack `addcircle` layers instead |
+| Monitors must stay within the simulation domain | Out-of-bounds monitors yield silent result failures |
+| Raw strings cannot end with `\` | Use double backslashes: `"C:\\path\\"` |
+
+## References
+
+| File | When to read |
+|------|-------------|
+| `references/building-blocks.md` | Building geometry, setting up sources, monitors, and mesh |
+| `references/api-reference.md` | Session management, SimObject, data passing, lumopt |
+| `references/common-errors.md` | Troubleshooting runtime errors |
+| `references/diffraction.md` | Aperture diffraction, Airy rings, near-field / far-field analysis |
