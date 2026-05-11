@@ -197,6 +197,7 @@ plt.savefig(os.path.join(pic_dir, "plot.png"))
 2. Python 脚本中 `fdtd.save()` 保存 `.fsp` 到 `fsp/` 目录，图表 `plt.savefig()` 保存到 `pic/` 目录，数据 `np.savez()` 保存到 `data/` 目录
 3. 子实验目录（如 `TGV_Waist_vs_Lambda/`）内部也遵循同样的 `fsp/data/pic` 分类
 4. 禁止将 `.fsp`、`.npz`、`.png` 文件散落在项目根目录
+5. 每次完成仿真+分析后，更新项目根目录的 `REPORT.md`，追加新结果和图表说明
 
 ### 脚本示例路径
 
