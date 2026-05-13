@@ -1,62 +1,92 @@
 # LumericalFDTD
 
-An OpenCode skill that automates Ansys Lumerical FDTD simulation workflows. Describe your photonic device in natural language, and the skill generates Python scripts, runs simulations, debugs errors autonomously, and delivers FSP files and result charts.
+A [Claude Code](https://claude.ai/code) skill that automates Ansys Lumerical FDTD simulation workflows. Describe your photonic device in natural language — the skill generates Python scripts, runs them against Lumerical's built-in interpreter, debugs errors autonomously, and delivers `.fsp` files and result charts.
 
-## Features
+## What is a Claude Code Skill?
 
-- **Natural Language to Simulation** — Describe structures, materials, sources, and monitors; receive working `.fsp` files
-- **Autonomous Debug Loop** — Scripts are executed with Lumerical's built-in Python interpreter, errors are caught and fixed automatically
-- **Separation of Simulation & Analysis** — Long-running simulations and fast data analysis are kept in independent scripts so you can tweak plots without re-running
-- **Built-in Best Practices** — Dedicated references for building blocks, API usage, common errors, and diffraction analysis
-- **Cross-Platform** — Supports Windows and Linux, auto-detects Lumerical installation paths and Python interpreter
+This repository is a **skill** — a specialized instruction pack that extends Claude Code's capabilities. When installed, `SKILL.md` is loaded into Claude's context whenever a user's request matches photonics simulation, FDTD, or related optics topics. Claude then follows the skill's 5-step pipeline to build, run, debug, and verify simulations automatically.
+
+## Installation
+
+```bash
+# Clone into your Claude Code skills directory
+git clone https://github.com/xiaoxin-robotech/LumericalFDTD.git ~/.claude/skills/LumericalFDTD
+```
+
+Or install via the `/skills` dialog in Claude Code. The skill will be auto-discovered on next launch.
+
+## Requirements
+
+- [Ansys Lumerical FDTD](https://www.ansys.com/products/optics/fdtd) (tested with 2025 R2 / v252)
+- Lumerical's built-in Python API (`lumapi`), included with the standard installation
+- Windows or Linux (macOS not officially supported by Ansys for FDTD)
+
+## How It Works
+
+```
+User describes device → Skill probes environment → Generates Python scripts → Runs via Lumerical's Python → Debugs errors → Saves .fsp + charts
+```
+
+The skill separates **simulation** (heavy FDTD run, minutes to hours) from **analysis** (data processing and plotting, seconds). This lets you tweak colors, labels, and figure layout without re-running the simulation.
+
+## Repository Structure
+
+```
+├── SKILL.md                       # Skill definition and runtime instructions
+├── LICENSE.txt                    # MIT license
+├── scripts/
+│   └── template.py                # Python script skeleton (placeholders replaced at runtime)
+├── references/
+│   ├── building-blocks.md         # Geometry, sources, monitors, and mesh recipes
+│   ├── api-reference.md           # Session management, SimObject, data passing, lumopt
+│   ├── common-errors.md           # Error → cause → fix lookup for known Lumerical quirks
+│   └── diffraction.md             # Aperture diffraction, Airy rings, near/far-field analysis
+└── assets/                        # Images and diagrams (reserved)
+```
 
 ## Supported Use Cases
 
 Photonics device design, diffraction analysis, metasurfaces, waveguides, gratings, TGV (Through Glass Via) structures, optical field propagation — any task requiring FDTD simulation with Ansys Lumerical.
 
-## Requirements
+## Example Prompts
 
-- [Ansys Lumerical FDTD](https://www.ansys.com/products/optics/fdtd) (tested with 2025 R2 / v252; older versions may work)
-- The Lumerical installation must include the Python API (`lumapi`)
+Once the skill is installed, describe your simulation in natural language:
 
-## File Management
+- "Design a 30 μm diameter circular aperture in a 50 μm thick SiO2 substrate, illuminated by a 100 μm plane wave, and observe the transmitted diffraction pattern"
+- "Simulate the reflection spectrum of a gold grating — period 10 μm, duty cycle 0.5, wavelength 1–2 μm"
+- "Parameter sweep: circular aperture diameter from 20 μm to 60 μm, step 10 μm, compare transmittance"
 
-Each simulation project follows a consistent directory structure:
+## Project Directory Convention
+
+Every simulation the skill creates follows this structure:
 
 | Directory | Contents |
 |-----------|----------|
 | `fsp/` | `.fsp` project files and simulation logs |
 | `data/` | `.npz` result data and `.json` metadata |
 | `pic/` | `.png` / `.jpg` charts and figures |
-| root | `.py` scripts and `.md` documentation |
+| root | `.py` scripts and `REPORT.md` documentation |
 
-## Usage
+## Known Lumerical API Quirks
 
-In an OpenCode / Cowork session with this skill installed, describe your simulation need directly:
+The Lumerical Python API has several non-obvious behaviors documented in `references/common-errors.md`:
 
-- "Design a 30 μm diameter circular aperture in a 50 μm thick SiO2 substrate, illuminated by a 100 μm plane wave, and observe the transmitted diffraction pattern"
-- "Simulate the reflection spectrum of a gold grating — period 10 μm, duty cycle 0.5, wavelength 1–2 μm"
-- "Parameter sweep: circular aperture diameter from 20 μm to 60 μm, step 10 μm, compare transmittance"
-
-The skill follows a five-step pipeline: understand requirements → generate script → run & debug → verify results → save deliverables.
-
-> [!NOTE]
-> On first use, the skill automatically probes your system for the Lumerical installation path. If it cannot be found, you will be asked to provide it.
+- Material names must be full strings: `"PEC (Perfect Electrical Conductor)"`, not `"PEC"`
+- Polygon function is `addpoly`, not `addpolygon`
+- `addcone` does not exist — stack `addcircle` layers instead
+- Monitors must stay within the simulation domain or fail silently
+- Raw strings cannot end with `\` on Windows
 
 ## Script Template
 
-A reusable template is included at `scripts/template.py`. Each generated script follows this structure:
+`scripts/template.py` provides the base structure all generated scripts follow:
 
 ```python
 # 1. Imports (API path, lumapi, numpy, matplotlib)
 # 2. Parameter definitions (wavelength, geometry, monitors)
 # 3. Simulation session (with lumapi.FDTD block):
-#    - Simulation region
-#    - Materials / substrate
-#    - Geometry (bottom to top)
-#    - Source
-#    - Monitors
-#    - Save → Run → Extract results
+#    - Simulation region → Materials → Geometry (bottom to top)
+#    - Source → Monitors → Save → Run → Extract results
 # 4. Post-processing (outside the session block)
 
 with lumapi.FDTD(hide=True) as fdtd:
@@ -66,25 +96,23 @@ with lumapi.FDTD(hide=True) as fdtd:
     fdtd.run()
 ```
 
-Simulation and analysis are kept in separate scripts — `project_sim.py` for the heavy FDTD run and `project_analysis.py` for data processing and plotting. This lets you adjust colors, labels, and figure layout without re-running the simulation.
-
-## Known Constraints
-
-The Lumerical Python API has several quirks documented in `references/common-errors.md`. Key ones include:
-
-| Constraint | Detail |
-|------------|--------|
-| Material names must be full strings | `"PEC (Perfect Electrical Conductor)"`, not `"PEC"` |
-| Polygon method is `addpoly` | Not `addpolygon` |
-| `addcone` does not exist | Stack `addcircle` layers instead |
-| Monitors must stay within the simulation domain | Out-of-bounds monitors yield silent result failures |
-| Raw strings cannot end with `\` | Use double backslashes: `"C:\\path\\"` |
-
 ## References
 
-| File | When to read |
-|------|-------------|
+| File | Purpose |
+|------|---------|
 | `references/building-blocks.md` | Building geometry, setting up sources, monitors, and mesh |
 | `references/api-reference.md` | Session management, SimObject, data passing, lumopt |
 | `references/common-errors.md` | Troubleshooting runtime errors |
 | `references/diffraction.md` | Aperture diffraction, Airy rings, near-field / far-field analysis |
+
+## Contributing
+
+This skill follows the [skill-creator](https://github.com/anthropics/claude-code/tree/main/skills/skill-creator) framework. To modify or extend it:
+
+1. Edit `SKILL.md` to change instructions or workflows
+2. Add API quirks to `references/common-errors.md`
+3. Add geometry patterns to `references/building-blocks.md`
+4. Update `scripts/template.py` if the base script structure needs to change
+5. Validate by running real Lumerical tasks with the modified skill
+
+The CLAUDE.md at the root provides additional guidance for Claude instances working in this repository.
