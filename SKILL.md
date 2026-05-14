@@ -156,6 +156,22 @@ plt.plot(data["x"], data["I"])
 plt.savefig(os.path.join(pic_dir, "plot.png"))
 ```
 
+## 2D 与 Quasi-2D 陷阱（高频错误！）
+
+**绝对不要用 `fdtd.set("dimension", "2D")`：**
+- API 接受该属性（`get("dimension")` 返回 `"2D"`），但底层求解器保持 3D 运行模式
+- 监视器 `getresult("far", "Ex")` 等返回全零数组
+- 数据仍含 y 维度（如 ny=74）
+
+**正确方案 — Quasi-2D：**
+- 使用 3D FDTD 求解器，设置 `y_span=0.2e-6`（1-2 个网格）
+- 设置 `y min bc = "Periodic"`, `y max bc = "Periodic"`
+- 所有结构、光源、监视器、网格覆盖均需设置对应的 `y span`
+- **必须**设置 `auto shutoff min = 3000e-15`（>= 3 ps），否则自动关断在 ~0.04 ps 触发
+- Quasi-2D 数据形状：`I` = `[nx, ny, 1, nfreq]`（ny=1-3），沿 y 求和得 1D profile
+
+见 `references/building-blocks.md` 完整 quasi-2D 模板。
+
 ## 关键约束（必须遵守）
 
 | 约束 | 说明 |
@@ -169,6 +185,13 @@ plt.savefig(os.path.join(pic_dir, "plot.png"))
 | 多边形顶点用 N×2 矩阵 | `set("vertices", vertices)` 而非分别 set x/y |
 | 切片结果用 `.copy()` | NumPy 视图原地操作会污染原始数据 |
 | raw string 不能以反斜杠结尾 | 用双反斜杠 `"C:\\path\\"` |
+| **严禁 `fdtd.set("dimension", "2D")`** | API 接受但仿真仍按 3D 运行，监视器数据全为零 | 用 quasi-2D：3D + `y_span=0.2um` + `y min/max bc = Periodic` |
+| **2D/quasi-2D 必须设 `auto shutoff min`** | 默认自动关断 ~0.04 ps，光未到达监视器 | `fdtd.set("auto shutoff min", 3000e-15)` >= 3 ps |
+| **宽带波长 `wavelengths[0]` 是最长波** | 频率线性递增，波长递减 | 设 `wl_short_idx = nfreq-1`, `wl_long_idx = 0` |
+| **print 特殊字符 -> GBK 乱码** | Windows 终端 GBK 编码报错 | 用纯 ASCII：`lambda` `delta` `um` 替代 superscript/arrow |
+| **Bash 不支持 `&` 操作符** | `&` 是 PowerShell 语法 | 直接 `'path/to/python.exe' 'script.py'` |
+| **改仿真模式后清除旧数据** | skip-if-exists 跳过所有重跑 | `rm data/*.npz fsp/*.fsp` 后再启动 |
+| **不用 `-c` 跑复杂 Python** | 引号嵌套与反斜杠冲突 | 写临时 `.py` 文件执行 |
 
 ## 参考文档索引
 

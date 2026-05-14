@@ -4,6 +4,8 @@
 
 ## 仿真区域 (FDTD Region)
 
+### 标准 3D
+
 ```python
 fdtd.addfdtd()
 fdtd.set("x", 0)
@@ -20,6 +22,37 @@ fdtd.set("simulation time", t_sim)  # 仿真时间（秒），默认自动
 **尺寸估算**：区域 span 应包含所有结构 + PML 余量（每边至少 2-3 个网格）。
 
 **加速仿真**：减小区大小、降低 mesh accuracy、缩短 simulation time。
+
+### Quasi-2D（xy 截面为无限，仅 xz 平面有效）
+
+> **严禁使用 `fdtd.set("dimension", "2D")`**：虽然 `get("dimension")` 会返回 `"2D"`，但仿真实际上仍按 3D 运行，导致所有监视器 E 场数据全为零。必须使用下面的 quasi-2D 方案。
+
+**正确做法 — Quasi-2D**（3D 求解器 + 单网格 y 维度 + 周期性边界）：
+
+```python
+fdtd.addfdtd()
+fdtd.set("x", 0)
+fdtd.set("x span", x_span)
+fdtd.set("y", 0)
+fdtd.set("y span", 0.2e-6)          # 极薄 y 方向（1-2 个网格）
+fdtd.set("z", 0)
+fdtd.set("z span", z_span)
+fdtd.set("y min bc", "Periodic")     # 周期性边界 → 等效无限大
+fdtd.set("y max bc", "Periodic")
+fdtd.set("mesh accuracy", 3)
+fdtd.set("pml layers", 8)
+fdtd.set("simulation time", 5000e-15)
+fdtd.set("auto shutoff min", 3000e-15)  # 必须设！quasi-2D 自动关断过早
+```
+
+**关键点**：
+- **`auto shutoff min` 必须 >= 3 ps**：quasi-2D 默认自动关断在 ~0.04 ps 触发（远早于光到达监视器），导致所有数据为零
+- y_span 设为 0.2 um 保证 1-2 个网格（足够容纳 PML 和周期性边界）
+- 光源和监视器的 y_span 设为对应 FDTD 区域 y_span 的 0.8-0.95 倍
+- Mesh override 的 dy 设为 y_span（单网格）
+- 几何结构（plate、etch circles）的 y_span 同样需要设置
+
+**Quasi-2D 数据形状**：监视器 I 数组形状为 `[nx, ny, 1, nfreq]`，其中 `ny` 通常为 1-3。分析时沿 y 轴求和（`np.sum(I, axis=1)`）得到 1D x-profile。
 
 ---
 
@@ -187,6 +220,16 @@ T = fdtd.getresult("monitor_name", "T")   # 透射率
 # 大数据先存到本地变量，避免重复获取
 ```
 
+**Quasi-2D 数据形状**：
+- 2D Z-normal 监视器 I 数组：`[nx, ny, 1, nfreq]`
+- `ny` 通常为 1-3，沿 y 求和得 1D profile：`prof_1d = np.sum(I, axis=1)`
+- 总功率：`P = np.sum(I, axis=(0, 1)).ravel()` → 得到 `[nfreq]` 数组
+
+**宽带波长顺序**：
+- 频率为线性递增：`freqs = linspace(c/wl_stop, c/wl_start, nfreq)`
+- 波长不线性：`wavelengths = c / freqs`，`wavelengths[0]` = 最长波长，`wavelengths[-1]` = 最短波长
+- 标注索引时：`wl_short_idx = n_freq - 1`（~4um），`wl_long_idx = 0`（~14um）
+
 **NumPy 坑点**：对 `getresult` 返回数组切片后原地操作（如 `/=`）会污染原始数据，务必用 `.copy()`：
 
 ```python
@@ -200,6 +243,8 @@ profile /= profile.max()
 
 用于局部加密精细结构（如小孔、渐变区域）的网格。**慎用**：
 
+### 3D
+
 ```python
 fdtd.addmesh()
 fdtd.set("name", "mesh_hole")
@@ -209,6 +254,19 @@ fdtd.set("z span", thickness * 1.2)
 fdtd.set("dx", grid_size)
 fdtd.set("dy", grid_size)
 fdtd.set("dz", grid_size)
+```
+
+### Quasi-2D
+
+```python
+fdtd.addmesh()
+fdtd.set("name", "mesh_hole")
+fdtd.set("x span", hole_diameter * 1.5)
+fdtd.set("y span", y_span)          # 覆盖整个 y 方向
+fdtd.set("z span", thickness * 1.2)
+fdtd.set("dx", 0.5e-6)              # 2D 模式下可承受更细网格
+fdtd.set("dy", y_span)              # 单网格
+fdtd.set("dz", 0.5e-6)
 ```
 
 > **关键警告**：mesh override 的 dx/dy/dz 必须**小于或等于**自动网格间距，否则会反向降低精度。不确定时直接不设 mesh override，信赖自动网格。

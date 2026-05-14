@@ -14,3 +14,12 @@
 | `SyntaxError: unterminated string` | raw string 以 `\` 结尾 | 用 `"C:\\path\\"` 双反斜杠 |
 | view 操作污染原数组 | 切片原地归一化 | 用 `.copy()` 创建副本 |
 | PowerShell 解析错误 | 路径含空格时用双引号包裹 | 用 `& 'path' 'script'` 而非 `"path"` |
+| `dimension="2D"` 后 I 全为零 | API 接受但仿真仍按 3D 运行，E 场数据全零 | 用 quasi-2D 方案：3D + `y_span=0.2um` + `Periodic` BC |
+| 2D/quasi-2D 自动关断过早 | 默认 ~0.04 ps 触发，光未到达监视器 | `fdtd.set("auto shutoff min", 3000e-15)` 必须 >= 3 ps |
+| Quasi-2D 数据有 y 维度 | 数据形状 `[nx, ny, 1, nfreq]`，ny > 1 | 沿 y 求和得 1D profile：`np.sum(I, axis=1)` |
+| 宽带波长顺序反直觉 | `wavelengths[0]` = 最长波，`[-1]` = 最短波 | 明确设 `wl_short_idx = nfreq-1`，`wl_long_idx = 0` |
+| `UnicodeEncodeError: 'gbk'` | print 含 `²` `→` `λ` `Δ` `µ` 等特殊字符 | Windows GBK 终端用纯 ASCII 替代：`lambda` `delta` `um` 等 |
+| Bash 中 `& 'path'` 报语法错 | `&` 是 PowerShell 操作符，bash 不支持 | 直接 `'path/to/python.exe' 'script.py'` |
+| Python -c 一行脚本报 SyntaxError | 单双引号与反斜杠转义冲突 | 写临时 `.py` 文件再执行，不要用 `-c` 跑复杂脚本 |
+| 改仿真模式后旧数据导致跳过 | skip-if-exists 检测到旧 `.npz` 不重跑 | 清除旧 `data/*.npz` 和 `fsp/*.fsp` 后再跑 |
+| raw string 尾反斜杠 SyntaxError | `r"C:\path\"` 中 `\"` 转义了引号 | 全部用双反斜杠：`"C:\\path\\"` |
